@@ -1,23 +1,19 @@
 import numpy as np
 
 class GRiDCodeGenerator:
-    # first import helpers to write code generation
-    from ._code_generation_helpers import gen_add_code_line, gen_add_code_lines, gen_add_end_control_flow, gen_add_end_function, \
-                                          gen_add_func_doc, gen_add_serial_ops, gen_add_parallel_loop, gen_add_sync, gen_var_in_list, \
-                                          gen_var_not_in_list, gen_add_multi_threaded_select, gen_kernel_load_inputs, gen_kernel_save_result, \
-                                          gen_kernel_load_inputs_single_timing, gen_kernel_save_result_single_timing, \
-                                          gen_static_array_ind_2d, gen_static_array_ind_3d
+    # first import helpers to write code generation, spatial algebra, and opology helpers (parent, child, Sind, XImats) and the robotModel object wrapepr
+    from .helpers import gen_add_code_line, gen_add_code_lines, gen_add_end_control_flow, gen_add_end_function, \
+                         gen_add_func_doc, gen_add_serial_ops, gen_add_parallel_loop, gen_add_sync, gen_var_in_list, \
+                         gen_var_not_in_list, gen_add_multi_threaded_select, gen_kernel_load_inputs, gen_kernel_save_result, \
+                         gen_kernel_load_inputs_single_timing, gen_kernel_save_result_single_timing, \
+                         gen_static_array_ind_2d, gen_static_array_ind_3d, \
+                         gen_mx_func_call_for_cpp, gen_spatial_algebra_helpers, \
+                         gen_init_XImats, gen_load_update_XImats_helpers_temp_mem_size, gen_load_update_XImats_helpers_function_call, \
+                         gen_XImats_helpers_temp_shared_memory_code, gen_load_update_XImats_helpers, gen_topology_helpers_size, \
+                         gen_topology_sparsity_helpers_python, gen_init_topology_helpers, gen_topology_helpers_pointers_for_cpp, \
+                         gen_insert_helpers_function_call, gen_insert_helpers_func_def_params, gen_init_robotModel
 
-    # then import the spatial algebra math helpers
-    from ._spatial_algebra_helpers import gen_mx_func_call_for_cpp, gen_spatial_algebra_helpers
-
-    # then import the topology helpers (parent, child, Sind, XImats) and the robotModel object wrapepr
-    from ._topology_helpers import gen_init_XImats, gen_load_update_XImats_helpers_temp_mem_size, gen_load_update_XImats_helpers_function_call, \
-                                   gen_XImats_helpers_temp_shared_memory_code, gen_load_update_XImats_helpers, gen_topology_helpers_size, \
-                                   gen_topology_sparsity_helpers_python, gen_init_topology_helpers, gen_topology_helpers_pointers_for_cpp, \
-                                   gen_insert_helpers_function_call, gen_insert_helpers_func_def_params, gen_init_robotModel
-
-    # finally import all of the algorithms
+    # then import all of the algorithms
     from .algorithms import gen_inverse_dynamics_inner_temp_mem_size, gen_inverse_dynamics_inner_function_call, \
                             gen_inverse_dynamics_device_temp_mem_size, gen_inverse_dynamics_inner, gen_inverse_dynamics_device, \
                             gen_inverse_dynamics_kernel, gen_inverse_dynamics_host, gen_inverse_dynamics, \
@@ -33,7 +29,7 @@ class GRiDCodeGenerator:
                             gen_forward_dynamics_gradient_inner_python, gen_forward_dynamics_gradient_device, gen_forward_dynamics_gradient_kernel, \
                             gen_forward_dynamics_gradient_host, gen_forward_dynamics_gradient
 
-    # also don't forget to import the test code
+    # finally import the test code
     from ._test import test_rnea_fpass, test_rnea_bpass, test_rnea, test_minv_bpass, test_minv_fpass, test_densify_Minv, test_minv, test_rnea_grad_inner, \
                       test_rnea_grad, test_fd_grad, mx0, mx1, mx2, mx3, mx4, mx5, mx, mxS, mxv, fx, fxS, fxv
 

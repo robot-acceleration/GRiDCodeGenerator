@@ -33,7 +33,7 @@ For each algorithm (written as a ```_algorithm.py``` file in the ```algorithms``
 
 **Codegeneration helper functions are as follows:**
 
-Note: most functions assume inputs are strings and are located in the ```_code_generation_helpers.py``` file (and a few are also found in the ```_topology_helpers.py``` and ```_spatial_algebra_hlpers.py``` files)
+Note: most functions assume inputs are strings and are located in the ```helpers``` folder in the ```_code_generation_helpers.py``` file (and a few are also found in the ```_topology_helpers.py``` and ```_spatial_algebra_hlpers.py``` files)
 
 + Add a string or list of strings of code with ```gen_add_code_line(new_code_line, add_indent_after = False)``` and ```gen_add_code_lines(new_code_lines, add_indent_after = False)```
 + Reduce the global indentation level and insert a close brace with ```gen_add_end_control_flow()``` and ```gen_add_end_function()```
