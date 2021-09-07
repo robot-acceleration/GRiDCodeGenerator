@@ -5,11 +5,13 @@ A optimized CUDA C++ code generation engine for rigid body dynamics algorithms a
 This package is written in Python and outputs CUDA C++ code. Helper functions have been written to speed up the algorithm implementation process and are detailed below. If your favorite rigid body dynamics algorithm is not yet implemented please either submit a PR to this repo with the code generation implementation or simply submit a PR to our [rbdReference](https://github.com/robot-acceleration/rbdReference) package with the Python implementation and we'll then try to get a GPU implementation designed as soon as possible.
 
 ## Dependencies:
-The only external dependencies are ```numpy,sympy``` which can be automatically installed by running:
+The only external dependencies needed to run this package are ```numpy,sympy``` which can be automatically installed by running:
 ```shell
 pip3 install -r requirements.txt
 ```
 This package also depends on our [URDFParser](https://github.com/robot-acceleration/URDFParser) package.
+
+Running the CUDA C++ code output by the GRiDCodegenerator also requires CUDA to be installed on your system. Please see the [README.md in the GRID](https://github.com/robot-acceleration/GRiD) wrapper package for instalation notes for CUDA.
 
 ## Usage:
 This package relies on an already parsed ```robot``` object from our [URDFParser](https://github.com/robot-acceleration/URDFParser) package.
