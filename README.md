@@ -4,15 +4,6 @@ A optimized CUDA C++ code generation engine for rigid body dynamics algorithms a
 
 This package is written in Python and outputs CUDA C++ code. Helper functions have been written to speed up the algorithm implementation process and are detailed below. If your favorite rigid body dynamics algorithm is not yet implemented please either submit a PR to this repo with the code generation implementation or simply submit a PR to our [rbdReference](https://github.com/robot-acceleration/rbdReference) package with the Python implementation and we'll then try to get a GPU implementation designed as soon as possible.
 
-## Dependencies:
-The only external dependencies needed to run this package are ```numpy,sympy``` which can be automatically installed by running:
-```shell
-pip3 install -r requirements.txt
-```
-This package also depends on our [URDFParser](https://github.com/robot-acceleration/URDFParser) package.
-
-Running the CUDA C++ code output by the GRiDCodegenerator also requires CUDA to be installed on your system. Please see the [README.md in the GRID](https://github.com/robot-acceleration/GRiD) wrapper package for instalation notes for CUDA.
-
 ## Usage:
 This package relies on an already parsed ```robot``` object from our [URDFParser](https://github.com/robot-acceleration/URDFParser) package.
 ```python
@@ -20,6 +11,15 @@ GRiDCodeGenerator = GRiDCodeGenerator(robot, DEBUG_MODE = False)
 GRiDCodeGenerator.gen_all_code()
 ```
 A file named ```grid.cuh``` will be written to the current working directory and can then be included into your project. See the wrapper [GRiD](https://github.com/robot-acceleration/GRiD) package for more instructions on how to use and test this code.
+
+## Instalation Instructions:
+The only external dependencies needed to run this package are ```numpy,sympy``` which can be automatically installed by running:
+```shell
+pip3 install -r requirements.txt
+```
+This package also depends on our [URDFParser](https://github.com/robot-acceleration/URDFParser) package.
+
+Running the CUDA C++ code output by the GRiDCodegenerator also requires CUDA to be installed on your system. Please see the [README.md in the GRID](https://github.com/robot-acceleration/GRiD) wrapper package for instalation notes for CUDA.
 
 ## Code Generation API
 
@@ -31,7 +31,6 @@ For each algorithm (written as a ```_algorithm.py``` file in the ```algorithms``
 + ```gen_algorithm_kernel```: generates a a kernel that handles the shared memory allocation for the ```_inner```  function. These functions assume that input are loaded into, and return results to, the global GPU memory.
 + ```gen_algorithm_host```: generates a host function that wraps the ```_kernel``` and handles the transfer of inputs to the GPU and the results back to the CPU.
 + ```gen_algorithm```: runs all of the above mention function generators
-
 
 **Codegeneration helper functions are as follows:**
 
@@ -50,11 +49,10 @@ Note: most functions assume inputs are strings and are located in the ```helpers
 + Generate the optimized C++ code string to compute the matrix cross product operation on a set of links/joints ```gen_mx_func_call_for_cpp(inds = None, PEQ_FLAG = False, SCALE_FLAG = False, updated_var_names = None)```
 + **Get** variables that hold C++ code strings that represent the optimized topology pointers for a given set of joint/link indicies for a given robot mode (e.g., either indexing into shared memory to get parent indicies or optimized to simply return the current index minus one for a serial chain roboto) with ```parent_ind, S_ind, dva_col_offset_for_jid, df_col_offset_for_jid, dva_col_offset_for_parent, df_col_offset_for_parent, dva_col_offset_for_jid_p1, df_col_that_is_jid = gen_topology_helpers_pointers_for_cpp(inds = None, updated_var_names = None, NO_GRAD_FLAG = False)``` and similar Python numerical values can be returned through ```dva_cols_per_partial, dva_cols_per_jid, running_sum_dva_cols_per_jid, df_cols_per_partial,  df_cols_per_jid,  running_sum_df_cols_per_jid,  df_col_that_is_jid = gen_topology_sparsity_helpers_python()```
 
-
 ## Additonal Features:
 This package also includes test functions which allow for code optimizations and refactorizations to be tested against reference implementations. This code is located in the ```_test.py``` file.
 + ```(c, v, a, f) = GRiDCodeGenerator.test_rnea(q, qd, qdd = None, GRAVITY = -9.81)```
-+ ```Minv = GRiDCodeGenerator.test_minv(q, densify_Minv = False)
++ ```Minv = GRiDCodeGenerator.test_minv(q, densify_Minv = False)```
 + ```dc_du = GRiDCodeGenerator.test_rnea_grad(q, qd, qdd = None, GRAVITY = -9.81)``` where ```dc_du = np.hstack((dc_dq,dc_dqd))```
 + ```df_du = GRiDCodeGenerator.test_fd_grad(q, qd, u, GRAVITY = -9.81)``` where ```df_du = np.hstack((df_dq,df_dqd))```
 
