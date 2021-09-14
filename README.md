@@ -21,6 +21,13 @@ This package also depends on our [URDFParser](https://github.com/robot-accelerat
 
 Running the CUDA C++ code output by the GRiDCodegenerator also requires CUDA to be installed on your system. Please see the [README.md in the GRID](https://github.com/robot-acceleration/GRiD) wrapper package for instalation notes for CUDA.
 
+## C++ API
+To enable GRiD to be used by both expert and novice GPU programmers we provide the following API interface for each rigid body dynamics algorithm:
++ ```ALGORITHM_inner```: a device function that computes the core computation. These functions assume that inputs are already loaded into GPU shared memory, require a pointer to additional scratch shared memory, and store the result back in shared memory.
++ ```ALGORITHM_device```: a device function that handles the shared memory allocation for the ```\_inner``` function. These functions assume that inputs are already loaded into, and return results to, GPU shared memory.
++ ```ALGORITHM_kernel```: a kernel that handles the shared memory allocation for the ```\_inner``` function. These functions assume that inputs are loaded into, and return results to, the global GPU memory.
++ ```ALGORITHM```: a host function that wraps the ```_kernel``` and handles the transfer of inputs to the GPU and the results back to the CPU.
+
 ## Code Generation API
 
 For each algorithm (written as a ```_algorithm.py``` file in the ```algorithms``` folder) the following functions are generally written:
