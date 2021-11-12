@@ -34,7 +34,7 @@ class GRiDCodeGenerator:
                       test_rnea_grad, test_fd_grad, mx0, mx1, mx2, mx3, mx4, mx5, mx, mxS, mxv, fx, fxS, fxv
 
     # initialize the object
-    def __init__(self, robotObj, DEBUG_MODE = False, NEED_PRINT_MAT = False, USE_DYNAMIC_SHARED_MEM = True):
+    def __init__(self, robotObj, DEBUG_MODE = False, NEED_PRINT_MAT = False, USE_DYNAMIC_SHARED_MEM = True, FILE_NAMESPACE = "grid"):
         self.robot = robotObj
         self.code_str = ""
         self.indent_level = 0
@@ -42,6 +42,8 @@ class GRiDCodeGenerator:
         self.gen_print_mat = DEBUG_MODE or NEED_PRINT_MAT
         # even if dynamic shared mem is not requested for large robots we need to use it
         self.use_dynamic_shared_mem_flag = USE_DYNAMIC_SHARED_MEM or (self.robot.get_num_pos() > 12)
+        # check for the file/namespace name
+        self.file_namespace = FILE_NAMESPACE
     
     # add generic code needs and helpers (includes, memory initialization, constants, kernel settings etc.)
     def gen_add_includes(self, use_thread_group = False):
@@ -273,7 +275,7 @@ class GRiDCodeGenerator:
         self.gen_add_gpu_err()
         # then open our namespace
         self.gen_add_func_doc("All functions are kept in this namespace")
-        self.gen_add_code_line("namespace grid {", True)
+        self.gen_add_code_line("namespace " + self.file_namespace + " {", True)
         # then generate any constants and other helpers
         self.gen_add_constants_helpers()
         # then the spatial algebra related helpers
@@ -294,6 +296,6 @@ class GRiDCodeGenerator:
         self.gen_init_close_grid()
         self.gen_add_end_control_flow()
         # then output to a file
-        file = open("grid.cuh","w")
+        file = open(self.file_namespace + ".cuh","w")
         file.write(self.code_str)
         file.close()
