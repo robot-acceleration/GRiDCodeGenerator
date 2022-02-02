@@ -75,7 +75,7 @@ def test_rnea_fpass(self, q, qd, qdd = None, GRAVITY = -9.81):
 
     return (v,a,f)
 
-def test_rnea_bpass(self, q, f):
+def test_rnea_bpass(self, q, qd, f):
     # allocate memory
     n = len(q) # assuming len(q) = len(qd)
     c = np.zeros(n)
@@ -100,13 +100,17 @@ def test_rnea_bpass(self, q, f):
                     print("f[" + str(parent_array[ind]) + "_parent] = X^T*f[" + str(ind) + "]")
                     print(f[:,parent_array[ind]])
 
+    # add velocity damping (defaults to 0)
+    for k in range(n):
+        c[k] += self.robot.get_damping_by_id(k) * qd[k]
+
     return (c,f)
 
 def test_rnea(self, q, qd, qdd = None, GRAVITY = -9.81):
     # forward pass
     (v,a,f) = self.test_rnea_fpass(q, qd, qdd, GRAVITY)
     # backward pass
-    (c,f) = self.test_rnea_bpass(q, f)
+    (c,f) = self.test_rnea_bpass(q, qd, f)
 
     return (c,v,a,f)
 
@@ -479,7 +483,7 @@ def test_rnea_grad_inner(self, q, qd, v, a, f, GRAVITY = -9.81):
         col_inds.extend(self.robot.get_subtree_by_id(ind))
         for col in col_inds: # do in parallel with ind  
             dc_dq[ind,col] = np.matmul(S.transpose(),df_dq[:,col,ind])
-            dc_dqd[ind,col] = np.matmul(S.transpose(),df_dqd[:,col,ind])
+            dc_dqd[ind,col] = np.matmul(S.transpose(),df_dqd[:,col,ind]) + (self.robot.get_damping_by_id(ind) if ind == col else 0)
 
     return (dc_dq, dc_dqd, dv_dq, dv_dqd, da_dq, da_dqd, df_fp_dq, df_fp_dqd, df_dq, df_dqd)
 
