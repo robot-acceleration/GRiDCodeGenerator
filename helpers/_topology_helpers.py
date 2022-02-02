@@ -123,7 +123,9 @@ def gen_load_update_XImats_helpers(self, use_thread_group = False):
         if not self.robot.is_serial_chain() or not self.robot.are_Ss_identical(list(range(n))):
             self.gen_add_code_line("cgrps::memcpy_async(tgrp,s_topology_helpers,d_robotModel->d_topology_helpers," + str(self.gen_topology_helpers_size()) + "*sizeof(int));")
         self.gen_add_parallel_loop("k",str(self.robot.get_num_pos()),use_thread_group)
-        self.gen_add_code_line("sincosf(s_q[k],&s_temp[k],&s_temp[k+" + str(self.robot.get_num_pos()) + "]);")
+        # self.gen_add_code_line("sincosf(s_q[k],&s_temp[k],&s_temp[k+" + str(self.robot.get_num_pos()) + "]);")
+        self.gen_add_code_line("s_temp[k] = static_cast<T>(sin(s_q[k]));")
+        self.gen_add_code_line("s_temp[k+" + str(self.robot.get_num_pos()) + "] = static_cast<T>(cos(s_q[k]));")
         self.gen_add_end_control_flow()
         self.gen_add_code_line("cgrps::wait(tgrp);")
         self.gen_add_sync(use_thread_group)
@@ -137,7 +139,9 @@ def gen_load_update_XImats_helpers(self, use_thread_group = False):
             self.gen_add_code_line("s_topology_helpers[ind] = d_robotModel->d_topology_helpers[ind];")
             self.gen_add_end_control_flow()
         self.gen_add_parallel_loop("k",str(self.robot.get_num_pos()),use_thread_group)
-        self.gen_add_code_line("sincosf(s_q[k],&s_temp[k],&s_temp[k+" + str(self.robot.get_num_pos()) + "]);")
+        # self.gen_add_code_line("sincosf(s_q[k],&s_temp[k],&s_temp[k+" + str(self.robot.get_num_pos()) + "]);")
+        self.gen_add_code_line("s_temp[k] = static_cast<T>(sin(s_q[k]));")
+        self.gen_add_code_line("s_temp[k+" + str(self.robot.get_num_pos()) + "] = static_cast<T>(cos(s_q[k]));")
         self.gen_add_end_control_flow()
         self.gen_add_sync(use_thread_group)
     # else just load in XI from global to shared efficiently
