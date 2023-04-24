@@ -52,7 +52,7 @@ def gen_direct_minv_inner(self, use_thread_group = False):
     IaTempOffset = IaOffset + 36*max_bfs_width
     self.gen_add_code_line("// T *s_F = &s_temp[" + str(FOffset) + "]; T *s_IA = &s_temp[" + str(IAOffset) + "]; T *s_U = &s_temp[" + str(UOffset) + "];" + \
                              " T *s_Dinv = &s_temp[" + str(DinvOffset) + "]; T *s_Ia = &s_temp[" + str(IaOffset) + "]; T *s_IaTemp = &s_temp[" + str(IaTempOffset) + "];")
-    
+
     # set initial IA to I and zero Minv/F
     self.gen_add_code_line("// Initialize IA = I")
     self.gen_add_parallel_loop("ind",str(36*n),use_thread_group)
@@ -63,6 +63,7 @@ def gen_direct_minv_inner(self, use_thread_group = False):
     self.gen_add_code_line("if(ind < " + str(6*n*n) + "){s_temp[" + str(FOffset) + " + ind] = static_cast<T>(0);}")
     self.gen_add_code_line("else{s_Minv[ind - " + str(6*n*n) + "] = static_cast<T>(0);}")
     self.gen_add_end_control_flow()
+    self.gen_add_sync(use_thread_group)
 
     if self.DEBUG_MODE:
         self.gen_add_sync(use_thread_group)
