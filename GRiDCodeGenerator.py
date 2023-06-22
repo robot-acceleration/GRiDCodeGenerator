@@ -27,8 +27,10 @@ class GRiDCodeGenerator:
                             gen_inverse_dynamics_gradient_kernel, gen_inverse_dynamics_gradient_host, gen_inverse_dynamics_gradient, \
                             gen_forward_dynamics_gradient_inner_temp_mem_size, gen_forward_dynamics_gradient_kernel_max_temp_mem_size, \
                             gen_forward_dynamics_gradient_inner_python, gen_forward_dynamics_gradient_device, gen_forward_dynamics_gradient_kernel, \
-                            gen_forward_dynamics_gradient_host, gen_forward_dynamics_gradient, gen_crba_inner, gen_aba, gen_aba_inner, gen_aba_host, \
-                            gen_aba_inner_function_call, gen_aba_kernel, gen_aba_device, gen_aba_inner_temp_mem_size
+                            gen_forward_dynamics_gradient_host, gen_forward_dynamics_gradient, gen_aba, gen_aba_inner, gen_aba_host, \
+                            gen_aba_inner_function_call, gen_aba_kernel, gen_aba_device, gen_aba_inner_temp_mem_size, \
+                            gen_crba, gen_crba_inner_temp_mem_size, gen_crba_inner_function_call, gen_crba_inner, gen_crba_device_temp_mem_size, \
+                            gen_crba_device, gen_crba_kernel, gen_crba_host
 
     # finally import the test code
     from ._test import test_rnea_fpass, test_rnea_bpass, test_rnea, test_minv_bpass, test_minv_fpass, test_densify_Minv, test_minv, test_rnea_grad_inner, \
@@ -302,7 +304,7 @@ class GRiDCodeGenerator:
         self.gen_forward_dynamics(use_thread_group)
         self.gen_inverse_dynamics_gradient(use_thread_group)
         self.gen_forward_dynamics_gradient(use_thread_group)
-        self.gen_crba_inner(use_thread_group)
+        self.gen_crba(use_thread_group)
         self.gen_aba(use_thread_group)
         # then finally the master init and close the namespace
         self.gen_init_close_grid()
