@@ -7,32 +7,6 @@ def gen_crba_inner_temp_mem_size(self):
     return 140*n
 
 def gen_crba_inner_function_call(self, use_thread_group = False, updated_var_names = None):
-    """var_names = dict( \
-        s_M_name = "s_M", \
-        s_q_name = "s_q", \
-        s_qd_name = "s_qd", \
-        s_temp_name = "s_temp", \
-        s_XI = "s_XImats", \
-        gravity_name = "gravity"
-    )
-    #s_XI calculated in device and allocated in kernel 
-    #s_M, temp, q, qd allocated in kernel
-    #gravity allocated in host 
-     
-    if updated_var_names is not None:
-        for key,value in updated_var_names.items():
-            var_names[key] = value
-
-    crba_code_start = "crba_inner<T>(" + var_names["s_M_name"] + ", " + var_names["s_q_name"] + ", "  + var_names["s_qd_name"] + ", " + var_names["s_XI"] + ", " 
-    crba_code_end = var_names["s_temp_name"] + ", " + var_names["gravity_name"] + ");"
-    
-    if use_thread_group:
-        crba_code_start = crba_code_start.replace("(", "(tgrp, ")
-    
-    crba_code_middle = self.gen_insert_helpers_function_call()
-    crba_code = crba_code_start + crba_code_middle + crba_code_end
-
-    self.gen_add_code_line(crba_code)"""
     var_names = dict( \
         s_M_name = "s_M", \
         s_q_name = "s_q", \
@@ -398,7 +372,7 @@ def gen_crba_inner(self, use_thread_group = False):
                 jid = str(inds[0])
                 self.gen_add_code_line("int jid = " + str(jid) + ";")        
                 self.gen_add_code_line("int jidn = jid * " + str(n) + "; int jid6 = jid * 6;" )
-                self.gen_add_code_line("int curr_parent = s_parent_inds[parallel_ind];")
+                self.gen_add_code_line("int curr_parent = s_parent_inds[jid];")
                 self.gen_add_code_line("if(s_parent_inds[jid] != -1){")
                 self.gen_add_code_line("    s_M[jid + curr_parent*" + str(n) + "] = s_fh[jid6 + " + S_ind_cpp_par + "];")
                 self.gen_add_code_line("    s_M[curr_parent + jidn] = s_M[jid + curr_parent*" + str(n) + "];")
@@ -633,7 +607,7 @@ def gen_crba_kernel(self, use_thread_group = False, single_call_timing = False):
         self.gen_crba_inner_function_call(use_thread_group)
         self.gen_add_sync(use_thread_group)
         # save to global
-        self.gen_kernel_save_result("M","1",str(n),use_thread_group)
+        self.gen_kernel_save_result("M","1",str(n*n),use_thread_group)
         self.gen_add_end_control_flow()
     else:
         # repurpose NUM_TIMESTEPS for number of timing reps
@@ -645,7 +619,7 @@ def gen_crba_kernel(self, use_thread_group = False, single_call_timing = False):
         self.gen_crba_inner_function_call(use_thread_group)
         self.gen_add_end_control_flow()
         # save to global
-        self.gen_kernel_save_result_single_timing("M",str(n),use_thread_group)
+        self.gen_kernel_save_result_single_timing("M",str(n*n),use_thread_group)
     self.gen_add_end_function()
 
 def gen_crba_host(self, mode = 0):
@@ -707,7 +681,7 @@ def gen_crba_host(self, mode = 0):
     if not compute_only:
         # then transfer memory back
         self.gen_add_code_lines(["// finally transfer the result back", \
-                                 "gpuErrchk(cudaMemcpy(hd_data->h_M,hd_data->d_M,NUM_JOINTS*" + \
+                                 "gpuErrchk(cudaMemcpy(hd_data->h_M,hd_data->d_M,NUM_JOINTS*NUM_JOINTS*" + \
                                     ("num_timesteps*" if not single_call_timing else "") + "sizeof(T),cudaMemcpyDeviceToHost));",
                                  "gpuErrchk(cudaDeviceSynchronize());"])
     # finally report out timing if requested
