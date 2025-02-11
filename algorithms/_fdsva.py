@@ -58,6 +58,8 @@ def gen_fdsva_inner(self, use_thread_group = False):
     
     
     self.gen_add_code_line("direct_minv_inner<T>(s_Minv, s_q, s_XImats, s_temp);")
+    self.gen_add_sync(use_thread_group)
+
 
     # for row_m in range(n):
     #     for col_m in range(n):
@@ -90,9 +92,17 @@ def gen_fdsva_inner(self, use_thread_group = False):
     #         [  0,      -0.0033,  -0.03,    -0.0098,   0.0761,  -0.0631,  -0   ]]
 
     self.gen_add_code_line("inverse_dynamics_inner<T>(s_temp, s_vaf, s_q, s_qd, s_XImats, &s_temp[7], gravity);")
+    self.gen_add_sync(use_thread_group)
+
     self.gen_add_code_line("forward_dynamics_finish<T>(s_qdd1, s_tau, s_temp, s_Minv);")
+    self.gen_add_sync(use_thread_group)
+
     self.gen_add_code_line("inverse_dynamics_inner_vaf<T>(s_vaf, s_q, s_qd, s_qdd1, s_XImats, s_temp, gravity);")
+    self.gen_add_sync(use_thread_group)
+
     self.gen_add_code_line("inverse_dynamics_gradient_inner<T>(s_dc_du, s_q, s_qd, s_vaf, s_XImats, s_temp, gravity);")
+    self.gen_add_sync(use_thread_group)
+
 
     self.gen_add_code_line("T * di_dq = &s_dc_du[0];")
     self.gen_add_code_line("T * di_dqd = &s_dc_du[49];")
@@ -102,6 +112,8 @@ def gen_fdsva_inner(self, use_thread_group = False):
             if row_m > col_m:
                 self.gen_add_code_line("s_Minv["+ str(row_m + col_m*n) + "] = s_Minv["+ str(row_m*n + col_m) + "];")
 
+    self.gen_add_sync(use_thread_group)
+    
     self.gen_add_parallel_loop("ind",str(n*n),use_thread_group)
     self.gen_add_code_line("s_fddq_fddqd_fddt[ 98 + ind] = s_Minv[ind] ;")
     self.gen_add_end_control_flow()
