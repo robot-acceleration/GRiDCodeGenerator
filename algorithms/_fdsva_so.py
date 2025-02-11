@@ -409,9 +409,9 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
 
     self.gen_add_parallel_loop("ind",str(n*n*n),use_thread_group)
     #big addition step for df2_dq_qd
-    self.gen_add_code_line("s_df2[" + str(n*n*n) + "+ ind] = s_di_du[" + str(n*n*n) + " + ind] + dM_dqxfd_dqd[ind];")
+    self.gen_add_code_line("s_df2[" + str(n*n*n) + "+ ind] = s_d2tau_cross[ind] + dM_dqxfd_dqd[ind];")
     #load val for df2_dqd
-    self.gen_add_code_line("s_df2[" + str(n*n*n*2) + "+ ind] = s_di_du[" + str(n*n*n*2) + " + ind];")
+    self.gen_add_code_line("s_df2[" + str(n*n*n*2) + "+ ind] = s_d2tau_dqd[ind];")
     self.gen_add_end_control_flow()
     self.gen_add_sync(use_thread_group)
 
@@ -479,7 +479,7 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     self.gen_add_code_line("int page = ind / " + str(n*n) + ";")
     self.gen_add_code_line("int row = ind % " + str(n) + ";")
     self.gen_add_code_line("int col = ind % " + str(n*n) + " / " + str(n) + ";")
-    self.gen_add_code_line("s_df2[ind] = dot_prod<T," + str(n) + "," + str(n) + ",1>(&s_Minv[row], &s_df2[" + str(n*n) + "*page + " + str(n) + "*col]);")
+    self.gen_add_code_line("s_df2_temp[ind] = dot_prod<T," + str(n) + "," + str(n) + ",1>(&s_Minv[row], &s_df2[" + str(n*n) + "*page + " + str(n) + "*col]);")
     self.gen_add_end_control_flow()
     self.gen_add_sync(use_thread_group)
 
@@ -504,7 +504,7 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     
 def gen_fdsva_so_inner_temp_mem_size(self):
     n = self.robot.get_num_pos()
-    return n*n*n*4
+    return n*n*n*4*3
     
 def gen_fdsva_so_inner_function_call(self, use_thread_group = False, updated_var_names = None):
     var_names = dict( \
@@ -592,7 +592,7 @@ def gen_fdsva_so_kernel(self, use_thread_group = False, single_call_timing = Fal
     self.gen_add_code_line(func_def, True)
 
     # add shared memory variables
-    shared_mem_vars = ["__shared__ T s_df2[" + str(3*n*3*n*n) + "];", \
+    shared_mem_vars = ["__shared__ T s_df2[" + str(4*n*n*n) + "];", \
                         "__shared__ T s_q_qd_qdd_tau[4*" + str(n) + "]; T *s_q = s_q_qd_qdd_tau; T *s_qd = &s_q_qd_qdd_tau[" + str(n) + "]; T *s_qdd = &s_q_qd_qdd_tau[2 * " + str(n) + "]; T *s_tau = &s_q_qd_qdd_tau[3 * " + str(n) + "];",\
                         ]
     self.gen_add_code_lines(shared_mem_vars)
@@ -610,7 +610,7 @@ def gen_fdsva_so_kernel(self, use_thread_group = False, single_call_timing = Fal
         self.gen_fdsva_so_inner_function_call(use_thread_group)
         self.gen_add_sync(use_thread_group)
         # save to global
-        self.gen_kernel_save_result("df2","1",str(3*n*3*n*n),use_thread_group)
+        self.gen_kernel_save_result("df2","1",str(4*n*n*n),use_thread_group)
         self.gen_add_end_control_flow()
     else:
         # repurpose NUM_TIMESTEPS for number of timing reps
@@ -622,7 +622,7 @@ def gen_fdsva_so_kernel(self, use_thread_group = False, single_call_timing = Fal
         self.gen_fdsva_so_inner_function_call(use_thread_group)
         self.gen_add_end_control_flow()
         # save to global
-        self.gen_kernel_save_result_single_timing("df2",str(3*n*3*n*n),use_thread_group)
+        self.gen_kernel_save_result_single_timing("df2",str(4*n*n*n),use_thread_group)
     self.gen_add_end_function()
 
 def gen_fdsva_so_host(self, mode = 0):
@@ -662,8 +662,8 @@ def gen_fdsva_so_host(self, mode = 0):
     if not compute_only:
         # start code with memory transfer
         self.gen_add_code_lines(["// start code with memory transfer", \
-                                 "gpuErrchk(cudaMemcpyAsync(hd_data->d_q_qd_u,hd_data->h_q_qd_u,stride_q_qd_qdd*" + \
-                                    ("num_timesteps*" if not single_call_timing else "") + "*sizeof(T),cudaMemcpyHostToDevice,streams[0]));", \
+                                 "gpuErrchk(cudaMemcpyAsync(hd_data->d_q_qd_u,hd_data->h_q_qd_u,stride_q_qd_qdd" + \
+                                    ("*num_timesteps" if not single_call_timing else "") + "*sizeof(T),cudaMemcpyHostToDevice,streams[0]));", \
                                  "gpuErrchk(cudaDeviceSynchronize());"])
     # then compute:
     self.gen_add_code_line("// call the kernel")
@@ -678,7 +678,7 @@ def gen_fdsva_so_host(self, mode = 0):
         # then transfer memory back
         self.gen_add_code_lines(["// finally transfer the result back", \
                                 "gpuErrchk(cudaMemcpy(hd_data->h_df2,hd_data->d_df2," + \
-                                ("num_timesteps*" if not single_call_timing else "") + str(3*n*3*n*n) + "sizeof(T),cudaMemcpyDeviceToHost));",
+                                ("num_timesteps*" if not single_call_timing else "") + str(3*n*3*n*n) + "*sizeof(T),cudaMemcpyDeviceToHost));",
                                 "gpuErrchk(cudaDeviceSynchronize());"])
     # finally report out timing if requested
     if single_call_timing:
