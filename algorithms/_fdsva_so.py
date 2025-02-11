@@ -34,9 +34,14 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     self.gen_add_code_line("__shared__ T s_di_du[" + str(n*n*n*4) + "];")
     self.gen_add_code_line("__shared__ T s_vaf[" + str(12*n) + "];")
     #declare di_dqq, di_dqdqd, di_dqqd, dm_dq from idsvaso
-    self.gen_add_code_line("T *s_di_dqq = s_di_du; T *s_di_dqdqd = &s_di_du[" + str(n*n*n) + "]; T *s_di_dqqd = &s_di_du[" + str(n*n*n*2) + "]; T *s_dm_dq = &s_di_du[" + str(n*n*n*3) + "];" )
+    self.gen_add_code_line("T *s_d2tau_dq = &s_di_du[" + str(n*n*n*0) + "];" )
+    self.gen_add_code_line("T *s_d2tau_dqd = &s_di_du[" + str(n*n*n*1) + "];" )
+    self.gen_add_code_line("T *s_d2tau_cross = &s_di_du[" + str(n*n*n*2) + "];" )
+    self.gen_add_code_line("T *s_dm_dq = &s_di_du[" + str(n*n*n*3) + "];" )
+    # self.gen_add_code_line("T *s_di_dqq = s_di_du; T *s_di_dqdqd = &s_di_du[" + str(n*n*n) + "]; T *s_di_dqqd = &s_di_du[" + str(n*n*n*2) + "]; T *s_dm_dq = &s_di_du[" + str(n*n*n*3) + "];" )
     #declare df_dq, df_dqd, fd_dtau from df_du 
     self.gen_add_code_line("T *s_df_dq = s_df_du; T *s_df_dqd = &s_df_du[" + str(n*n) + "]; T *s_df_tau = &s_df_du[" + str(n*n*2) + "];")
+    self.gen_add_code_line("__shared__ T s_a[12*6*7]; __shared__ T s_b[3*2*6*6*7]; __shared__ T s_c[2024]; __shared__ T s_d[7300];")
   
     
     self.gen_add_code_line("grid::direct_minv_inner<T>(s_Minv, s_q, s_XImats, s_temp);")
@@ -47,9 +52,12 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     #             self.gen_add_code_line("s_Minv["+ str(row_m + col_m*n) + "] = s_Minv["+ str(row_m*n + col_m) + "];")
     
     self.gen_add_code_line("grid::fdsva_inner<T>(s_df_du, s_q, s_qd, s_qdd, s_tau, s_XImats, s_temp, gravity);")
-    self.gen_add_code_line("T * df_dq = &s_df_du[0];")
-    self.gen_add_code_line("T * df_dqd = &s_df_du[49];")
-    self.gen_add_code_line("T * df_dt = &s_df_du[49];")
+    # self.gen_add_code_line("T * df_dq = &s_df_du[0];")
+    # self.gen_add_code_line("T * df_dqd = &s_df_du[49];")
+    # self.gen_add_code_line("T * df_dt = &s_df_du[49];")
+
+    self.gen_add_code_line(" // grid::idsva_inner<T>(d2tau_dq, d2tau_dqd, d2tau_cross, s_dm_dq, s_a, s_q, s_qd, s_XImats, s_b, s_c, gravity, s_d);")
+
 
     #load in vals for idsvaso
 
@@ -115,9 +123,10 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     for k in range(n):
         for i in range(n):
             for j in range(n):
-                self.gen_add_code_line("s_di_du["+ str(49*k + 7*i + j) + "] = "+ str(flat_d2tau_dq[49*k + i + 7*j]) + ";")
-    # for i in range(len(flat_d2tau_dq)):
-    #     self.gen_add_code_line("s_di_du["+ str(i) + "] = "+ str(flat_d2tau_dq[i]) + ";")
+                self.gen_add_code_line("s_di_du["+ str(n*n*k + n*i + j) + "] = "+ str(flat_d2tau_dq[n*n*k + i + n*j]) + ";")
+
+    for i in range(len(flat_d2tau_dq)):
+        self.gen_add_code_line("s_di_du["+ str(i) + "] = "+ str(flat_d2tau_dq[i]) + ";")
 
 
     d2tau_dqd = [[[ 0 ,     0   ,   0  ,    0     , 0 ,    0  ,    0    ],
@@ -182,9 +191,10 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     for k in range(n):
         for i in range(n):
             for j in range(n):
-                self.gen_add_code_line("s_di_du["+ str(7*7*7 +49*k + 7*i + j) + "] = "+ str(flat_d2tau_dqd[49*k + i + 7*j]) + ";")
-    # for i in range(len(flat_d2tau_dqd)):    
-    #     self.gen_add_code_line("s_di_du["+ str(7*7*7 +i) + "] = "+ str(flat_d2tau_dqd[i]) + ";")
+                self.gen_add_code_line("s_di_du["+ str(n*n*n +n*n*k + n*i + j) + "] = "+ str(flat_d2tau_dqd[n*n*k + i + n*j]) + ";")
+
+    for i in range(len(flat_d2tau_dqd)):    
+        self.gen_add_code_line("s_di_du["+ str(7*7*7 +i) + "] = "+ str(flat_d2tau_dqd[i]) + ";")
 
     d2tau_cross = [[[ -0 ,     0   ,   0  ,    0     , 0 ,    0  ,    0    ],
   [ 0,     0 ,0  , 0, 0  ,0,  0],
@@ -241,13 +251,14 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
   [ 0,     0 , 0 ,0 ,-0 ,-0,  -0],
   [ 0,      0 , 0 , 0 ,0 ,-0, -0],
   [ 0,      0 , 0,     0  ,0 , 0 ,-0    ]]]
+    
     for i in range(n):
         d2tau_cross[i] = np.array(d2tau_cross[i]).T
     flat_d2tau_cross = (np.array(d2tau_cross).flatten())
     for k in range(n):
         for i in range(n):
             for j in range(n):
-                self.gen_add_code_line("s_di_du["+ str(7*7*7*2 +49*k + 7*i + j) + "] = "+ str(flat_d2tau_cross[49*k + i + 7*j]) + ";")
+                self.gen_add_code_line("s_di_du["+ str(n*n*n*2 +n*n*k + n*i + j) + "] = "+ str(flat_d2tau_cross[n*n*k + i + n*j]) + ";")
     # for i in range(7*7*7):
     #     self.gen_add_code_line("s_di_du["+ str(2*7*7*7 +i) + "] = "+ str(0) + ";")
 
@@ -313,9 +324,11 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     for k in range(n):
         for i in range(n):
             for j in range(n):
-                self.gen_add_code_line("s_di_du["+ str(3*7*7*7 +49*k + 7*i + j) + "] = "+ str(flat_dM_dq[49*k + 7*i + j]) + ";")
+                self.gen_add_code_line("s_di_du["+ str(3*n*n*n +n*n*k + n*i + j) + "] = "+ str(flat_dM_dq[n*n*k + n*i + j]) + ";")
     
 
+    self.gen_add_sync(use_thread_group)
+    
     self.gen_add_code_line("T *dM_dqxfd_dq = s_temp;")
 
     # for i in range(n):
@@ -348,8 +361,8 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     for i in range(n):
         self.gen_add_parallel_loop("ind",str(n*n),use_thread_group)
         self.gen_add_code_line("int page = "+ str(i) + ";")
-        self.gen_add_code_line("int row = ind % 7;")
-        self.gen_add_code_line("int col = ind / 7;")
+        self.gen_add_code_line("int row = ind % " + str(n) + ";")
+        self.gen_add_code_line("int col = ind / " + str(n) + ";")
         self.gen_add_code_line("rot_dM_dqxfd_dqd["+ str(n*n) + "*col + row + "+ str(n) + "*page] = dM_dqxfd_dq["+ str(n*n) + "*page + ind];")
         # self.gen_add_code_line("rot_dM_dqxfd_dqd = rotateMatrix(dM_dqxfd_dq, 7,7,7);")
         self.gen_add_end_control_flow()
@@ -420,6 +433,8 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     #         self.gen_add_code_line("dM_dqxminv[tid + " + str(n) + "*jid + ind] = dot_prod<T,7,7,1>(&s_dm_dq[tid + row], &s_Minv[" + str(n) + "*jid + col]);")
     #         self.gen_add_end_control_flow()
     #         self.gen_add_sync(use_thread_group)
+    self.gen_add_sync(use_thread_group)
+    
     self.gen_add_parallel_loop("ind",str(n*n*n),use_thread_group)
     #fill in mat mult of dM_dq + df_dqd
     self.gen_add_code_line("int page = ind / " + str(n*n) + ";")
@@ -455,16 +470,26 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     #         # self.gen_add_code_line("s_df2[" + str(3*n*n*n) + "+ tid + " + str(n) + "*jid + ind] = dot_prod<T,7,7,1>(&s_Minv[row], &s_df2[" + str(n*n*n) + "+ tid + " + str(n) + "*jid + col]);")
     #         self.gen_add_end_control_flow()
     #         self.gen_add_sync(use_thread_group)
+
+    self.gen_add_code_line("T *s_df2_temp = &s_di_du[0];")
+    
+
     self.gen_add_parallel_loop("ind",str(n*n*n*4),use_thread_group)
     #fill in mat mult of everything w minv
     self.gen_add_code_line("int page = ind / " + str(n*n) + ";")
     self.gen_add_code_line("int row = ind % " + str(n) + ";")
     self.gen_add_code_line("int col = ind % " + str(n*n) + " / " + str(n) + ";")
     self.gen_add_code_line("s_df2[ind] = dot_prod<T," + str(n) + "," + str(n) + ",1>(&s_Minv[row], &s_df2[" + str(n*n) + "*page + " + str(n) + "*col]);")
+    self.gen_add_end_control_flow()
+    self.gen_add_sync(use_thread_group)
+
+    self.gen_add_parallel_loop("ind",str(n*n*n*4),use_thread_group)
     #mult everything by -1
+    self.gen_add_code_line("s_df2[ind] = s_df2_temp[ind];")
     self.gen_add_code_line("s_df2[ind] *= (-1);")
     self.gen_add_end_control_flow()
     self.gen_add_sync(use_thread_group)
+
 
     # self.gen_add_parallel_loop("ind",str(n*n*n*4),use_thread_group)
     # #mult everything by -1
@@ -479,9 +504,7 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     
 def gen_fdsva_so_inner_temp_mem_size(self):
     n = self.robot.get_num_pos()
-    minv_temp = self.gen_direct_minv_inner_temp_mem_size()
-    id_du_temp = self.gen_inverse_dynamics_gradient_inner_temp_mem_size()
-    return max(minv_temp,id_du_temp) 
+    return n*n*n*4
     
 def gen_fdsva_so_inner_function_call(self, use_thread_group = False, updated_var_names = None):
     var_names = dict( \
@@ -538,7 +561,7 @@ def gen_fdsva_so_device(self, use_thread_group = False):
     shared_mem_size = self.gen_fdsva_so_device_temp_mem_size() if not self.use_dynamic_shared_mem_flag else None
     self.gen_XImats_helpers_temp_shared_memory_code(shared_mem_size)
 
-    self.gen_add_code_line("extern __shared__ T s_df2[" + str(21*21*7) + "];")
+    self.gen_add_code_line("extern __shared__ T s_df2[" + str(3*n*3*n*n) + "];")
     
     # then load/update XI and run the algo
     self.gen_load_update_XImats_helpers_function_call(use_thread_group)
@@ -569,7 +592,7 @@ def gen_fdsva_so_kernel(self, use_thread_group = False, single_call_timing = Fal
     self.gen_add_code_line(func_def, True)
 
     # add shared memory variables
-    shared_mem_vars = ["__shared__ T s_df2[" + str(21*21*7) + "];", \
+    shared_mem_vars = ["__shared__ T s_df2[" + str(3*n*3*n*n) + "];", \
                         "__shared__ T s_q_qd_qdd_tau[4*" + str(n) + "]; T *s_q = s_q_qd_qdd_tau; T *s_qd = &s_q_qd_qdd_tau[" + str(n) + "]; T *s_qdd = &s_q_qd_qdd_tau[2 * " + str(n) + "]; T *s_tau = &s_q_qd_qdd_tau[3 * " + str(n) + "];",\
                         ]
     self.gen_add_code_lines(shared_mem_vars)
@@ -587,7 +610,7 @@ def gen_fdsva_so_kernel(self, use_thread_group = False, single_call_timing = Fal
         self.gen_fdsva_so_inner_function_call(use_thread_group)
         self.gen_add_sync(use_thread_group)
         # save to global
-        self.gen_kernel_save_result("df2","1",str(21*21*7),use_thread_group)
+        self.gen_kernel_save_result("df2","1",str(3*n*3*n*n),use_thread_group)
         self.gen_add_end_control_flow()
     else:
         # repurpose NUM_TIMESTEPS for number of timing reps
@@ -599,10 +622,11 @@ def gen_fdsva_so_kernel(self, use_thread_group = False, single_call_timing = Fal
         self.gen_fdsva_so_inner_function_call(use_thread_group)
         self.gen_add_end_control_flow()
         # save to global
-        self.gen_kernel_save_result_single_timing("df2",str(21*21*7),use_thread_group)
+        self.gen_kernel_save_result_single_timing("df2",str(3*n*3*n*n),use_thread_group)
     self.gen_add_end_function()
 
 def gen_fdsva_so_host(self, mode = 0):
+    n = self.robot.get_num_pos()
     # default is to do the full kernel call -- options are for single timing or compute only kernel wrapper
     single_call_timing = True if mode == 1 else False
     compute_only = True if mode == 2 else False
@@ -639,7 +663,7 @@ def gen_fdsva_so_host(self, mode = 0):
         # start code with memory transfer
         self.gen_add_code_lines(["// start code with memory transfer", \
                                  "gpuErrchk(cudaMemcpyAsync(hd_data->d_q_qd_u,hd_data->h_q_qd_u,stride_q_qd_qdd*" + \
-                                    ("num_timesteps*" if not single_call_timing else "") + "sizeof(T),cudaMemcpyHostToDevice,streams[0]));", \
+                                    ("num_timesteps*" if not single_call_timing else "") + "*sizeof(T),cudaMemcpyHostToDevice,streams[0]));", \
                                  "gpuErrchk(cudaDeviceSynchronize());"])
     # then compute:
     self.gen_add_code_line("// call the kernel")
@@ -653,8 +677,8 @@ def gen_fdsva_so_host(self, mode = 0):
     if not compute_only:
         # then transfer memory back
         self.gen_add_code_lines(["// finally transfer the result back", \
-                                "gpuErrchk(cudaMemcpy(hd_data->h_df2,hd_data->d_df2,NUM_JOINTS*" + \
-                                ("num_timesteps*" if not single_call_timing else "") + "sizeof(T),cudaMemcpyDeviceToHost));",
+                                "gpuErrchk(cudaMemcpy(hd_data->h_df2,hd_data->d_df2," + \
+                                ("num_timesteps*" if not single_call_timing else "") + str(3*n*3*n*n) + "sizeof(T),cudaMemcpyDeviceToHost));",
                                 "gpuErrchk(cudaDeviceSynchronize());"])
     # finally report out timing if requested
     if single_call_timing:
