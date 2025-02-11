@@ -33,33 +33,24 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     self.gen_add_code_line("__shared__ T s_df_du[" + str(n*n*3) + "];")
     self.gen_add_code_line("__shared__ T s_di_du[" + str(n*n*n*4) + "];")
     self.gen_add_code_line("__shared__ T s_vaf[" + str(12*n) + "];")
-    #declare di_dqq, di_dqdqd, di_dqqd, dm_dq from idsvaso
+    #declare s_d2tau_dq, s_d2tau_dqd, s_d2tau_cross, s_dm_dq from idsvaso
     self.gen_add_code_line("T *s_d2tau_dq = &s_di_du[" + str(n*n*n*0) + "];" )
     self.gen_add_code_line("T *s_d2tau_dqd = &s_di_du[" + str(n*n*n*1) + "];" )
     self.gen_add_code_line("T *s_d2tau_cross = &s_di_du[" + str(n*n*n*2) + "];" )
     self.gen_add_code_line("T *s_dm_dq = &s_di_du[" + str(n*n*n*3) + "];" )
-    # self.gen_add_code_line("T *s_di_dqq = s_di_du; T *s_di_dqdqd = &s_di_du[" + str(n*n*n) + "]; T *s_di_dqqd = &s_di_du[" + str(n*n*n*2) + "]; T *s_dm_dq = &s_di_du[" + str(n*n*n*3) + "];" )
     #declare df_dq, df_dqd, fd_dtau from df_du 
     self.gen_add_code_line("T *s_df_dq = s_df_du; T *s_df_dqd = &s_df_du[" + str(n*n) + "]; T *s_df_tau = &s_df_du[" + str(n*n*2) + "];")
     self.gen_add_code_line("__shared__ T s_a[12*6*7]; __shared__ T s_b[3*2*6*6*7]; __shared__ T s_c[2024]; __shared__ T s_d[7300];")
   
     
     self.gen_add_code_line("grid::direct_minv_inner<T>(s_Minv, s_q, s_XImats, s_temp);")
-
-    # for row_m in range(n):
-    #     for col_m in range(n):
-    #         if row_m > col_m:
-    #             self.gen_add_code_line("s_Minv["+ str(row_m + col_m*n) + "] = s_Minv["+ str(row_m*n + col_m) + "];")
     
     self.gen_add_code_line("grid::fdsva_inner<T>(s_df_du, s_q, s_qd, s_qdd, s_tau, s_XImats, s_temp, gravity);")
-    # self.gen_add_code_line("T * df_dq = &s_df_du[0];")
-    # self.gen_add_code_line("T * df_dqd = &s_df_du[49];")
-    # self.gen_add_code_line("T * df_dt = &s_df_du[49];")
 
     self.gen_add_code_line(" // grid::idsva_inner<T>(d2tau_dq, d2tau_dqd, d2tau_cross, s_dm_dq, s_a, s_q, s_qd, s_XImats, s_b, s_c, gravity, s_d);")
 
 
-    #load in vals for idsvaso
+    #load in vals for idsvaso (hard code these vals until idsva_inner is ready)
 
     d2tau_dq  = [[[  0,       0,       0,       0,     0,       0,       0   ],
   [  0,      -3.7776, -33.6437,  -6.4784  , 1.1112,  -0.2367 , -0    ],
@@ -331,21 +322,6 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     
     self.gen_add_code_line("T *dM_dqxfd_dq = s_temp;")
 
-    # for i in range(n):
-    #     for j in range(n):
-    #         self.gen_add_parallel_loop("ind",str(n),use_thread_group)
-    #         #fill in mat mult of dM_dq + df_dq
-    #         # self.gen_add_code_line("int jid = " + str(i) + ";")
-    #         # self.gen_add_code_line("T *s_dm_dq" + str(i) + " = &s_dm_dq[" + str(i*n*n) + "];")
-    #         self.gen_add_code_line("int tid = " + str(i*n*n) + ";")
-    #         self.gen_add_code_line("int jid = " + str(j) + ";")
-            
-    #         self.gen_add_code_line("int row = ind % " + str(n) + ";")
-    #         self.gen_add_code_line("int col = ind / " + str(n) + ";")
-    #         # self.gen_add_code_line("dM_dqxfd_dq[" + str(i*n*n) + "+ ind] = dot_prod<T,7,7,1>(&s_dm_dq" + str(i) + "[row], &s_df_dq[" + str(n) + "*row + col]);")
-    #         self.gen_add_code_line("dM_dqxfd_dq[tid + " + str(n) + "*jid + ind] = dot_prod<T,7,7,1>(&s_dm_dq[tid + row], &s_df_dq[" + str(n) + "*jid + col]);")
-    #         self.gen_add_end_control_flow()
-    #         self.gen_add_sync(use_thread_group)
     self.gen_add_parallel_loop("ind",str(n*n*n),use_thread_group)
     #fill in mat mult of dM_dq + df_dq
     self.gen_add_code_line("int page = ind / " + str(n*n) + ";")
@@ -367,14 +343,6 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
         # self.gen_add_code_line("rot_dM_dqxfd_dqd = rotateMatrix(dM_dqxfd_dq, 7,7,7);")
         self.gen_add_end_control_flow()
         self.gen_add_sync(use_thread_group)
-    # self.gen_add_code_line("T *rot_dM_dqxfd_dqd = &s_temp[0];")
-    # self.gen_add_parallel_loop("ind",str(n*n*n),use_thread_group)
-    # self.gen_add_code_line("int page = ind / " + str(n*n) + ";")
-    # self.gen_add_code_line("int row = ind % " + str(n) + ";")
-    # self.gen_add_code_line("int col = ind % " + str(n*n) + " / " + str(n) + ";")
-    # self.gen_add_code_line("rot_dM_dqxfd_dqd["+ str(n*n) + "*col + row + "+ str(n) + "*page] = dM_dqxfd_dq["+ str(n*n) + "*page + ind];")
-    # self.gen_add_end_control_flow()
-    # self.gen_add_sync(use_thread_group)
 
     self.gen_add_parallel_loop("ind",str(n*n*n),use_thread_group)
     # #big addition step for df2_dq
@@ -384,18 +352,6 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
 
     self.gen_add_code_line("T *dM_dqxfd_dqd = s_temp;")
 
-    # #fill in mat mult of dM_dq + df_dqd
-    # for i in range(n):
-    #     for j in range(n):
-    #         self.gen_add_parallel_loop("ind",str(n),use_thread_group)
-    #         self.gen_add_code_line("int tid = " + str(i*n*n) + ";")
-    #         self.gen_add_code_line("int jid = " + str(j) + ";")
-            
-    #         self.gen_add_code_line("int row = ind % " + str(n) + ";")
-    #         self.gen_add_code_line("int col = ind / " + str(n) + ";")
-    #         self.gen_add_code_line("dM_dqxfd_dqd[tid + " + str(n) + "*jid + ind] = dot_prod<T,7,7,1>(&s_dm_dq[tid + row], &s_df_dqd[" + str(n) + "*jid + col]);")
-    #         self.gen_add_end_control_flow()
-    #         self.gen_add_sync(use_thread_group)
     self.gen_add_parallel_loop("ind",str(n*n*n),use_thread_group)
     #fill in mat mult of dM_dq + df_dqd
     self.gen_add_code_line("int page = ind / " + str(n*n) + ";")
@@ -416,23 +372,12 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     self.gen_add_sync(use_thread_group)
 
     #fill in mat mult of dM_dq + Minv
-    # self.gen_add_code_line("T *dM_dqxminv = s_temp;")
     #fix minv 
     for row_m in range(n):
         for col_m in range(n):
             if row_m > col_m:
                 self.gen_add_code_line("s_Minv["+ str(row_m + col_m*n) + "] = s_Minv["+ str(row_m*n + col_m) + "];")
-    # for i in range(n):
-    #     for j in range(n):
-    #         self.gen_add_parallel_loop("ind",str(n),use_thread_group)
-    #         self.gen_add_code_line("int tid = " + str(i*n*n) + ";")
-    #         self.gen_add_code_line("int jid = " + str(j) + ";")
-            
-    #         self.gen_add_code_line("int row = ind % " + str(n) + ";")
-    #         self.gen_add_code_line("int col = ind / " + str(n) + ";")
-    #         self.gen_add_code_line("dM_dqxminv[tid + " + str(n) + "*jid + ind] = dot_prod<T,7,7,1>(&s_dm_dq[tid + row], &s_Minv[" + str(n) + "*jid + col]);")
-    #         self.gen_add_end_control_flow()
-    #         self.gen_add_sync(use_thread_group)
+
     self.gen_add_sync(use_thread_group)
     
     self.gen_add_parallel_loop("ind",str(n*n*n),use_thread_group)
@@ -445,31 +390,6 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     self.gen_add_end_control_flow()
     self.gen_add_sync(use_thread_group)
     
-    # self.gen_add_parallel_loop("ind",str(n*n*n),use_thread_group)
-    # #load val for df2_dtau
-    # self.gen_add_code_line("s_df2[" + str(n*n*n*3) + "+ ind] = dM_dqxminv[ind];")
-    # self.gen_add_end_control_flow()
-    # self.gen_add_sync(use_thread_group)
-
-
-    # for i in range(4*n):
-    #     for j in range(n):
-    #         self.gen_add_parallel_loop("ind",str(n),use_thread_group)
-    #         #fill in mat mult of dM_dq + df_dq
-    #         # self.gen_add_code_line("int jid = " + str(i) + ";")
-    #         # self.gen_add_code_line("T *s_dm_dq" + str(i) + " = &s_dm_dq[" + str(i*n*n) + "];")
-    #         self.gen_add_code_line("int tid = " + str(i*n*n) + ";")
-    #         self.gen_add_code_line("int jid = " + str(j) + ";")
-            
-    #         self.gen_add_code_line("int row = ind % " + str(n) + ";")
-    #         self.gen_add_code_line("int col = ind / " + str(n) + ";")
-    #         # self.gen_add_code_line("dM_dqxfd_dq[" + str(i*n*n) + "+ ind] = dot_prod<T,7,7,1>(&s_dm_dq" + str(i) + "[row], &s_df_dq[" + str(n) + "*row + col]);")
-    #         self.gen_add_code_line("s_df2[tid + " + str(n) + "*jid + ind] = dot_prod<T,7,7,1>(&s_Minv[ind], &s_df2[tid + " + str(n) + "*jid + col]);")
-    #         # self.gen_add_code_line("s_df2[" + str(n*n*n) + "+ tid + " + str(n) + "*jid + ind] = dot_prod<T,7,7,1>(&s_Minv[row], &s_df2[" + str(n*n*n) + "+ tid + " + str(n) + "*jid + col]);")
-    #         # self.gen_add_code_line("s_df2[" + str(2*n*n*n) + "+ tid + " + str(n) + "*jid + ind] = dot_prod<T,7,7,1>(&s_Minv[row], &s_df2[" + str(n*n*n) + "+ tid + " + str(n) + "*jid + col]);")
-    #         # self.gen_add_code_line("s_df2[" + str(3*n*n*n) + "+ tid + " + str(n) + "*jid + ind] = dot_prod<T,7,7,1>(&s_Minv[row], &s_df2[" + str(n*n*n) + "+ tid + " + str(n) + "*jid + col]);")
-    #         self.gen_add_end_control_flow()
-    #         self.gen_add_sync(use_thread_group)
 
     self.gen_add_code_line("T *s_df2_temp = &s_di_du[0];")
     
@@ -489,13 +409,6 @@ def gen_fdsva_so_inner(self, use_thread_group = False):
     self.gen_add_code_line("s_df2[ind] *= (-1);")
     self.gen_add_end_control_flow()
     self.gen_add_sync(use_thread_group)
-
-
-    # self.gen_add_parallel_loop("ind",str(n*n*n*4),use_thread_group)
-    # #mult everything by -1
-    # self.gen_add_code_line("s_df2[ind] *= (-1);")
-    # self.gen_add_end_control_flow()
-    # self.gen_add_sync(use_thread_group)
 
     self.gen_add_end_function()
 
